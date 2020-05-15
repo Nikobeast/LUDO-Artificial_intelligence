@@ -1,0 +1,6 @@
+*.npy
+*.json
+test.py
+TrainTheBest.py
+/folders
+/__pychache__
