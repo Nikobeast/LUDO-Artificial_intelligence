@@ -1,8 +1,8 @@
-Prerequisites:
-Python 3
-ludopy
+#Prerequisites:
+- Python 3
+- ludopy
 
-Install Ludopy with $pip install ludopy
+Install Ludopy with - pip install ludopy
 
 LUDO_real.py is for traning the first four players and training a new child when a chromosome is mated and mutated
 LudoGame.py plays the game
