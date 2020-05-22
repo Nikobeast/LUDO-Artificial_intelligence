@@ -3,7 +3,7 @@
 - ludopy
 
 ## Install Ludopy: 
-  $pip install ludopy
+    $ pip install ludopy
 
 The guide for ludopy can be found on: https://github.com/SimonLBSoerensen/LUDOpy
 
