@@ -1,5 +1,6 @@
 *.npy
 *.json
+*.pyc
 test.py
 TrainTheBest.py
 /folders
