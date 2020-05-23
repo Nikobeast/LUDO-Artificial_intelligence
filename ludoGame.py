@@ -38,6 +38,106 @@ class game:
 
 
 if __name__ == '__main__':
+    # Each chromosome vs 3 random 1k iterations, develop child, raise child, replace lowest score chromosome*
+    AI = game()
+    AI.player[0] = Player("finalQtable0.json", "chromosome0.npy")
+    AI.player[1] = Player("finalQtable1.json", "chromosome1.npy")
+    AI.player[2] = Player("finalQtable2.json", "chromosome2.npy")
+    AI.player[3] = Player("finalQtable3.json", "chromosome3.npy")
+    counter = 0
+    best_win_rate = 50
+    train_iterations = 8001
+    while True:
+        max_interations = 1001
+        wins = []
+
+        for index in range(4):
+            FinalAI = game()
+            winners = []
+            FinalAI.player[index] = Player("finalQtable" + str(index) + ".json", "chromosome" + str(index) + ".npy")
+            for j in tqdm(range(1, max_interations)):
+                winner = FinalAI.run_game()
+                winners.append(winner)
+                if j % 100 == 0:
+                    print("Fight amongst genes")
+                    print((np.size(np.where(np.asarray(winners) == 0)) / j) * 100)
+                    print((np.size(np.where(np.asarray(winners) == 1)) / j) * 100)
+                    print((np.size(np.where(np.asarray(winners) == 2)) / j) * 100)
+                    print((np.size(np.where(np.asarray(winners) == 3)) / j) * 100)
+            wins.append((np.size(np.where(np.asarray(winners) == index)) / j) * 100)
+            with open('BestChromsomeVs3Random' + str(index) + '.txt', 'a+') as f:
+                f.write(str((np.size(np.where(np.asarray(winners) == 0)) / max_interations) * 100) + ', '
+                        + str((np.size(np.where(np.asarray(winners) == 1)) / max_interations) * 100) + ', '
+                        + str((np.size(np.where(np.asarray(winners) == 2)) / max_interations) * 100) + ', '
+                        + str((np.size(np.where(np.asarray(winners) == 3)) / max_interations) * 100) + '\n')
+            with open('ChromosomeOrder' + str(index) + '.txt', 'a+') as f:
+                f.write(str(FinalAI.player[index].getchromosome()) + '\n')
+            del FinalAI
+        print(wins)
+
+        winner = int(np.argmax(wins))
+        loser = int(np.argmin(wins))
+        gen = GenAI(np.asarray(AI.player[winner].chromosome))
+        print('winner: ', winner)
+        print('loser: ', loser)
+
+        # without mating
+        # newchromosome = gen.mutate_chromosome(AI.player[winner].getchromosome())
+
+        #  with mating - finds the second best chromosome
+        x = np.sort(np.asarray(wins))
+        sec = np.where(np.asarray(wins) == x[2])
+        # print('sec: ', int(sec[0][0]))
+        print("best: ", AI.player[winner].getchromosome())
+        print("sec-best ", AI.player[int(sec[0][0])].getchromosome())
+        newchromosome = gen.pair_mating(AI.player[winner].getchromosome(), AI.player[int(sec[0][0])].getchromosome())
+        print("mutated child ", newchromosome)
+
+        if wins[winner] > best_win_rate:
+            print("_______________________________________________________")
+            print("DONE MORE THAN 50 % win vs 3 random players!")
+            print('winner: ', wins[winner])
+            print("best mutated ", newchromosome)
+
+            with open("WinnerQtable.json", "w") as f:
+                k = AI.player[winner].qtable.keys()
+                v = AI.player[winner].qtable.values()
+                k1 = [str(i) for i in k]
+                json.dump(json.dumps(dict(zip(*[k1, v]))), f)
+            print('final winner chromosome', AI.player[winner].chromosome)
+            np.save("WinnerChromosome", AI.player[winner].chromosome)
+            print("DONE BY WINNING")
+            print("_______________________________________________________")
+            best_win_rate = wins[winner]
+            #  break
+
+        print("Train new Chromosome vs 3xRandomPlayer")
+        LUDO_trainer = trainNewChild(newchromosome, loser, train_iterations)
+
+        AI.player[loser] = Player("finalQtable" + str(loser) + ".json", "chromosome" + str(loser) + ".npy")
+
+        print("Number of generations: ", counter)
+        counter += 1
+
+        if counter == 50:
+            print("_______________________________________________________")
+            print("DONE WITH THAN 50 GENERATIONS")
+            print('winner: ', wins[winner])
+            print('best win rate: ', best_win_rate)
+            print("best mutated ", newchromosome)
+
+            with open("WinnerQtable50.json", "w") as f:
+                k = AI.player[winner].qtable.keys()
+                v = AI.player[winner].qtable.values()
+                k1 = [str(i) for i in k]
+                json.dump(json.dumps(dict(zip(*[k1, v]))), f)
+            print('final winner chromosome', AI.player[winner].chromosome)
+            np.save("WinnerChromosome50", AI.player[winner].chromosome)
+            print("DONE BY GENERATIONS")
+            print("_______________________________________________________")
+            break
+    # ------------------------------------------------------------------------------------------------------------------
+
     # Intern fight, Child from mating, train new child, Test best chromosome vs 3 random
     # AI = game()
     # AI.player[0] = Player("finalQtable0.json", "chromosome0.npy")
@@ -146,107 +246,9 @@ if __name__ == '__main__':
     #         break
 
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # Each chromosome vs 3 random 1k iterations, develop child, raise child, replace lowest score chromosome*
-    AI = game()
-    AI.player[0] = Player("finalQtable0.json", "chromosome0.npy")
-    AI.player[1] = Player("finalQtable1.json", "chromosome1.npy")
-    AI.player[2] = Player("finalQtable2.json", "chromosome2.npy")
-    AI.player[3] = Player("finalQtable3.json", "chromosome3.npy")
-    counter = 0
-    best_win_rate = 50
-    train_iterations = 8001
-    while True:
-        max_interations = 1001
-        wins = []
 
-        for index in range(4):
-            FinalAI = game()
-            winners = []
-            FinalAI.player[index] = Player("finalQtable" + str(index) + ".json", "chromosome" + str(index) + ".npy")
-            for j in tqdm(range(1, max_interations)):
-                winner = FinalAI.run_game()
-                winners.append(winner)
-                if j % 100 == 0:
-                    print("Fight amongst genes")
-                    print((np.size(np.where(np.asarray(winners) == 0))/j) * 100)
-                    print((np.size(np.where(np.asarray(winners) == 1)) / j) * 100)
-                    print((np.size(np.where(np.asarray(winners) == 2)) / j) * 100)
-                    print((np.size(np.where(np.asarray(winners) == 3)) / j) * 100)
-            wins.append((np.size(np.where(np.asarray(winners) == index)) / j) * 100)
-            with open('BestChromsomeVs3Random'+str(index)+'.txt', 'a+') as f:
-                f.write(str((np.size(np.where(np.asarray(winners) == 0)) / max_interations) * 100)+', '
-                        + str((np.size(np.where(np.asarray(winners) == 1)) / max_interations) * 100)+', '
-                        + str((np.size(np.where(np.asarray(winners) == 2)) / max_interations) * 100)+', '
-                        + str((np.size(np.where(np.asarray(winners) == 3)) / max_interations) * 100)+'\n')
-            with open('ChromosomeOrder'+str(index)+'.txt', 'a+') as f:
-                f.write(str(FinalAI.player[index].getchromosome())+'\n')
-            del FinalAI
-        print(wins)
 
-        winner = int(np.argmax(wins))
-        loser = int(np.argmin(wins))
-        gen = GenAI(np.asarray(AI.player[winner].chromosome))
-        print('winner: ', winner)
-        print('loser: ', loser)
-
-         # without mating
-        # newchromosome = gen.mutate_chromosome(AI.player[winner].getchromosome())
-
-        #  with mating - finds the second best chromosome
-        x = np.sort(np.asarray(wins))
-        sec = np.where(np.asarray(wins) == x[2])
-        # print('sec: ', int(sec[0][0]))
-        print("best: ", AI.player[winner].getchromosome())
-        print("sec-best ", AI.player[int(sec[0][0])].getchromosome())
-        newchromosome = gen.pair_mating(AI.player[winner].getchromosome(), AI.player[int(sec[0][0])].getchromosome())
-        print("mutated child ", newchromosome)
-
-        if wins[winner] > best_win_rate:
-            print("_______________________________________________________")
-            print("DONE MORE THAN 50 % win vs 3 random players!")
-            print('winner: ', wins[winner])
-            print("best mutated ", newchromosome)
-
-            with open("WinnerQtable.json", "w") as f:
-                k = AI.player[winner].qtable.keys()
-                v = AI.player[winner].qtable.values()
-                k1 = [str(i) for i in k]
-                json.dump(json.dumps(dict(zip(*[k1, v]))), f)
-            print('final winner chromosome', AI.player[winner].chromosome)
-            np.save("WinnerChromosome", AI.player[winner].chromosome)
-            print("DONE BY WINNING")
-            print("_______________________________________________________")
-            best_win_rate = wins[winner]
-            #  break
-
-        print("Train new Chromosome vs 3xRandomPlayer")
-        LUDO_trainer = trainNewChild(newchromosome, loser, train_iterations)
-
-        AI.player[loser] = Player("finalQtable" + str(loser)+".json", "chromosome"+str(loser)+".npy")
-
-        print("Number of generations: ", counter)
-        counter += 1
-
-        if counter == 50:
-            print("_______________________________________________________")
-            print("DONE WITH THAN 50 GENERATIONS")
-            print('winner: ', wins[winner])
-            print('best win rate: ', best_win_rate)
-            print("best mutated ", newchromosome)
-
-            with open("WinnerQtable50.json", "w") as f:
-                k = AI.player[winner].qtable.keys()
-                v = AI.player[winner].qtable.values()
-                k1 = [str(i) for i in k]
-                json.dump(json.dumps(dict(zip(*[k1, v]))), f)
-            print('final winner chromosome', AI.player[winner].chromosome)
-            np.save("WinnerChromosome50", AI.player[winner].chromosome)
-            print("DONE BY GENERATIONS")
-            print("_______________________________________________________")
-            break
-
-    # # Test of 1337 game Chromosome (best chromosome test) ----------------------------------------------------------
+    # # Test of 1337 game Chromosome (best chromosome test) -----------------------------------------------------
     # AI = game()
     # AI.player[0] = Player("finalQtable1337.json", "WinnerChromosome.npy")
     #
